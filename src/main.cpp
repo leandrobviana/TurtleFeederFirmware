@@ -24,6 +24,8 @@
 #include <config.h>
 #include <main.h>
 #include <utils.h>
+#include <screen.h>
+#include <Encoder.h>
 #ifdef USE_OTA
 #include <OTA.h>
 #endif
@@ -35,8 +37,8 @@
 #endif
 #include <timer.h>
 
-const char* ssid = STASSID;
-const char* password = STAPSK;
+const char *ssid = STASSID;
+const char *password = STAPSK;
 
 // Tracks the last time event fired
 unsigned long previousMillis = 0;
@@ -44,37 +46,65 @@ unsigned long previousMillis = 0;
 // Used to track if LED should be on or off
 boolean outOfFoodLED = false;
 
+boolean wifi_connected = false;
+
+boolean start_editing = false;
+
+boolean editing_minute = false;
+
+boolean editing_blink = false;
+
+int timerHourSet = 0;
+int timerMinuteSet = 0;
+
 // Button variables
-int buttonVal = 0; // value read from button
-int buttonLast = 1; // buffered value of the button's previous state
+int buttonVal = 0;       // value read from button
+int buttonLast = 1;      // buffered value of the button's previous state
 unsigned long btnDnTime; // time the button was pressed down
 unsigned long btnUpTime; // time the button was released
 
 Servo feeder; // create servo object to control a servo
 
-void setup() {
+Encoder myEnc(encoderDT, encoderCLK);
+
+long encoderPosition = 0;
+
+int currentScreen = 0;
+
+void setup()
+{
     Serial.begin(115200);
     Serial.println("Booting...");
-    pinMode(buttonPin, INPUT_PULLUP);
-    pinMode(led_RED, OUTPUT);
-    pinMode(led_GREEN, OUTPUT);
-    pinMode(led_BLUE, OUTPUT);
+
+    start_display();
+    //show_msg_display("Starting...");
+    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+    pinMode(encoderSW, INPUT_PULLUP);
+    //pinMode(led_RED, OUTPUT);
+    //pinMode(led_GREEN, OUTPUT);
+    //pinMode(led_BLUE, OUTPUT);
     pinMode(sensorPin, INPUT);
     feeder.attach(servoPin);
     feeder.write(homePosition);
-    RGB_color(255, 0, 0);
+
+    //RGB_color(255, 0, 0);
+
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED && millis() < 15000) {
+    while (WiFi.status() != WL_CONNECTED && millis() < 15000)
+    {
         yield();
     }
+
+    wifi_connected = WiFi.status() == WL_CONNECTED;
 #ifdef USE_OTA
     SetupOTA();
 #endif
     Udp.begin(NTP_localPort);
     setSyncProvider(getNtpTime);
 #ifdef useDST
-    if (inSummerTime(now())) {
+    if (inSummerTime(now()))
+    {
         Serial.println("DST detected, adjusting time");
         setSyncProvider(getNtpTime); // Re-sync time
     }
@@ -91,65 +121,197 @@ void setup() {
     initTimer();
     Alarm.delay(500);
     feeder.detach();
-    RGB_color(0, standbyIntensivity, 0);
+
+    //RGB_color(0, standbyIntensivity, 0);
+
+    //show_msg_display("Setup Done");
+    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+
+    timerHourSet = getTimerIntHour();
+    timerMinuteSet = getTimerIntMinute();
 }
 
-void loop() {
+void loop()
+{
     checkConnection();
     Alarm.delay(0);
+
+    long newPos = myEnc.read();
+
+    if (newPos > encoderPosition + 2)
+    {
+        if (currentScreen < MAX_SCREEN && !start_editing)
+        {
+            currentScreen++;
+            //currentScreen = currentScreen + (newPos-encoderPosition)/2;
+        }
+
+        if (timerHourSet < 23 && start_editing && !editing_minute)
+        {
+            timerHourSet++;
+            //timerHourSet = timerHourSet + (newPos-encoderPosition)/2;
+        }
+
+        if (timerMinuteSet < 59 && editing_minute)
+        {
+            timerMinuteSet++;
+            //timerHourSet = timerHourSet + (newPos-encoderPosition)/2;
+        }
+        encoderPosition = newPos;
+    }
+
+    if (newPos < encoderPosition - 2)
+    {
+        if (currentScreen > MIN_SCREEN && !start_editing)
+        {
+            currentScreen--;
+            //currentScreen = currentScreen - (newPos-encoderPosition)/2;
+        }
+
+        if (timerHourSet > 0 && start_editing && !editing_minute)
+        {
+            timerHourSet--;
+            //timerHourSet = timerHourSet - (newPos-encoderPosition)/2;
+        }
+
+        if (timerMinuteSet > 0 && editing_minute)
+        {
+            timerMinuteSet--;
+            //timerHourSet = timerHourSet + (newPos-encoderPosition)/2;
+        }
+        encoderPosition = newPos;
+    }
+
+    /*if (newPos != encoderPosition)
+    {
+        //encoderPosition = newPos;
+        Serial.println("---------------");
+        Serial.println("position");
+        Serial.println(encoderPosition);
+        Serial.println("screen");
+        Serial.println(currentScreen);
+        Serial.println("timerHourSet");
+        Serial.println(timerHourSet);
+    }*/
+
 #ifdef USE_MQTT
     client.loop();
 #endif
 #ifdef USE_OTA
     handleOTA();
 #endif
+
     buttonHandle();
     ledHandle();
 }
 
-void checkConnection() {
-    while (WiFi.status() != WL_CONNECTED) {
-        RGB_color(255, 0, 0);
+void checkConnection()
+{
+    wifi_connected = WiFi.status() == WL_CONNECTED;
+    while (WiFi.status() != WL_CONNECTED)
+    {
+
+        //show_msg_display("No Wifi");
+        drawScreen(currentScreen, "Connecting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+        //RGB_color(255, 0, 0);
+
         Alarm.delay(0);
         buttonHandle();
     }
 }
 
-void buttonHandle() {
-    // Read the state of the button
-    buttonVal = digitalRead(buttonPin);
+void blink_stuff()
+{
 
+    unsigned long currentMillis = millis();
+
+    if ((unsigned long)(currentMillis - previousMillis) >= ledBlinkTime)
+    {
+        editing_blink = !(editing_blink); // Invert state
+        outOfFoodLED = !(outOfFoodLED);   // Invert state
+        previousMillis = currentMillis;   // Save the current time to compare "later"
+
+        if (editing_blink)
+        {
+            drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+        }
+        else
+        {
+            drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+        }
+    }
+}
+
+void buttonHandle()
+{
+    // Read the state of the button
+    buttonVal = digitalRead(encoderSW);
     // Test for button pressed and store the down time
     if (buttonVal == LOW && buttonLast == HIGH && (millis() - btnUpTime) > long(debounce))
         btnDnTime = millis();
 
     // Test for button release and store the up time
-    if (buttonVal == HIGH && buttonLast == LOW && (millis() - btnDnTime) > long(debounce)) {
+    if (buttonVal == HIGH && buttonLast == LOW && (millis() - btnDnTime) > long(debounce))
+    {
         // Short button press action
-        Feed(1);
-        btnUpTime = millis();
+        if (currentScreen == 0)
+        {
+            Feed(1);
+            btnUpTime = millis();
+        }
+        if (currentScreen == 1)
+        {
+            if (start_editing)
+            {
+                if (editing_minute)
+                {
+                    start_editing = !start_editing;
+                    setTimer(timerHourSet, timerMinuteSet);
+                }
+                editing_minute = !editing_minute;
+            }
+            else
+            {
+                start_editing = !start_editing;
+            }
+        }
+    }
+
+    if (start_editing)
+    {
+        blink_stuff();
     }
 
     // Test for button held down for longer than the hold time
-    if (buttonVal == LOW && (millis() - btnDnTime) > long(holdTime)) {
+    if (buttonVal == LOW && (millis() - btnDnTime) > long(holdTime))
+    {
         // Long button press action
         ESP.restart();
     }
     buttonLast = buttonVal;
 }
 
-void ledHandle() {
-    if (outOfFood()) {
-        // If there is no food in dispenser
-        // Grab snapshot of current time, this keeps all timing consistent
-        unsigned long currentMillis = millis();
-        // Compare to previous capture to see if enough time has passed
-        if ((unsigned long)(currentMillis - previousMillis) >= ledBlinkTime) {
-            outOfFoodLED = !(outOfFoodLED); // Invert state
-            previousMillis = currentMillis; // Save the current time to compare "later"
-            outOfFoodLED ? RGB_color(255, 64, 0) : RGB_color(0, 255, 0); // Set the LED according to state of variable
-        }
-    } else {
-        RGB_color(0, standbyIntensivity, 0); // Default standby
+void ledHandle()
+{
+    if (outOfFood())
+    {
+        blink_stuff();
     }
+    else
+    {
+        outOfFoodLED = false;
+        //RGB_color(0, standbyIntensivity, 0); // Default standby
+        //show_msg_display("Wait time");
+        drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+    }
+}
+
+boolean get_wifi_connected()
+{
+    return wifi_connected;
+}
+
+boolean get_outOfFoodLED()
+{
+    return outOfFoodLED;
 }

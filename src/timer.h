@@ -24,3 +24,7 @@ void RegularFeed();
 void initTimer();
 void setTimer(int hour, int minute);
 void disableTimer();
+String getTimerHour();
+String getTimerMinute();
+int getTimerIntHour();
+int getTimerIntMinute();

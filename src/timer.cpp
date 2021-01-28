@@ -26,14 +26,17 @@
 int timerHour;
 int timerMinute;
 
-void RegularFeed(){
+void RegularFeed()
+{
     Feed(regularFeed);
 }
 
-void initTimer(){
+void initTimer()
+{
     EEPROM.begin(4);
     delay(10);
-    if (EEPROM.read(0) == 1) {
+    if (EEPROM.read(0) == 1)
+    {
         timerHour = EEPROM.read(1);
         timerMinute = EEPROM.read(2);
         Alarm.alarmRepeat(timerHour, timerMinute, 0, RegularFeed);
@@ -42,7 +45,8 @@ void initTimer(){
     EEPROM.end();
 }
 
-void setTimer(int hour, int minute) {
+void setTimer(int hour, int minute)
+{
     EEPROM.begin(4);
     delay(10);
     EEPROM.write(0, 1);
@@ -54,7 +58,41 @@ void setTimer(int hour, int minute) {
     ESP.restart();
 }
 
-void disableTimer(){
+String getTimerHour()
+{
+    if (timerHour < 10)
+    {
+        return "0" + String(timerHour);
+    }
+    else
+    {
+        return String(timerHour);
+    }
+}
+
+String getTimerMinute()
+{
+    if (timerMinute < 10)
+    {
+        return "0" + String(timerMinute);
+    }
+    else
+    {
+        return String(timerMinute);
+    }
+}
+
+int getTimerIntHour()
+{
+    return timerHour;
+}
+int getTimerIntMinute()
+{
+    return timerMinute;
+}
+
+void disableTimer()
+{
     EEPROM.begin(4);
     delay(10);
     EEPROM.write(0, 0);

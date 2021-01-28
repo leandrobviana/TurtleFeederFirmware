@@ -24,5 +24,8 @@ void buttonHandle();
 void ledHandle();
 void checkConnection();
 
+boolean get_wifi_connected();
+boolean get_outOfFoodLED();
+
 extern IPAddress timeServerIP;
 extern Servo feeder;

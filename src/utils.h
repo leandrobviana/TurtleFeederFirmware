@@ -27,6 +27,7 @@
 void RGB_color(int red_light_value,
     int green_light_value,
     int blue_light_value);
+
 time_t getNtpTime();
 void sendNTPpacket(IPAddress& address);
 void Feed(int times);

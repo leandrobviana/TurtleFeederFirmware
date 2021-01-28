@@ -23,6 +23,8 @@
 #include <config.h>
 #include <main.h>
 #include <utils.h>
+#include <screen.h>
+#include<timer.h>
 #ifdef USE_TELEGRAM
 #include <telegram.h>
 #include <lang.h>
@@ -38,13 +40,15 @@ unsigned long lastKnownTimeAT = 0;
 void RGB_color(int red_light_value,
     int green_light_value,
     int blue_light_value) {
-    analogWrite(led_RED, red_light_value);
-    analogWrite(led_GREEN, green_light_value);
-    analogWrite(led_BLUE, blue_light_value);
+    //analogWrite(led_RED, red_light_value);
+    //analogWrite(led_GREEN, green_light_value);
+    //analogWrite(led_BLUE, blue_light_value);
 }
 
 void Feed(int times) {
-    RGB_color(128, 64, 0);
+    //RGB_color(128, 64, 0);
+    //show_msg_display_feed("FEEDING");
+    drawScreen(0, "Feeding",getTimerHour() + ":" + getTimerMinute(), get_wifi_connected(), outOfFood(), get_outOfFoodLED(), false, false, 0, 0);
     feeder.attach(servoPin);
     for (int i = 0; i < times; i++) {
         feeder.write(180);
@@ -59,7 +63,7 @@ void Feed(int times) {
         sendMessageToAllSubscribedUsers(tg_OUTOFFOOD);
     }
 #endif
-    RGB_color(0, standbyIntensivity, 0);
+    //RGB_color(0, standbyIntensivity, 0);
 }
 
 boolean outOfFood() {

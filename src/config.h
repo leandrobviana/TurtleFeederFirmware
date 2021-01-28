@@ -18,8 +18,8 @@
  */
 
 // Wifi
-#define STASSID "MyWifi"    // SSID of your wifi network
-#define STAPSK "MyPassword"    // Password of your wifi network
+#define STASSID "GFI"    // SSID of your wifi network
+#define STAPSK "00000000"    // Password of your wifi network
 
 // OTA
 //#define USE_OTA    // Uncomment to enable upgrading firmware via espota
@@ -48,8 +48,8 @@
 
 // Time
 #define ntpServerName "pl.pool.ntp.org"    // Time server pool address
-#define timeZone 1    // Your timezone (CET by default)
-#define useDST    // Comment this line if your country doesn't use daylight saving time
+#define timeZone -3    // Your timezone (CET by default)
+//#define useDST    // Comment this line if your country doesn't use daylight saving time
 #ifdef useDST
     #define DSTshift 60    // Time shift of DST in minutes
 #endif
@@ -61,12 +61,21 @@
 #define standbyIntensivity 8    // (0-254) Intensivity of standby green led
 
 // Pins
-#define led_RED D7
-#define led_GREEN D6
-#define led_BLUE D5
-#define buttonPin D3    // Button should connect to ground when pushed
-#define servoPin D0    // SG-90 Servo yellow cable
+//#define led_RED D7
+//#define led_GREEN D6
+//#define led_BLUE D5
+#define servoPin D6    // SG-90 Servo yellow cable
 #define sensorPin A0    // IR Photodiode connected between 5V and A0
+#define sclPin D1      //SCL pin for OLED Screen 0.96"
+#define sdaPin D2      //SDA pin for OLED Screen 0.96"
+
+//Screen
+#define OLED_RESET 0  // GPIO0
+
+//Encoder button
+#define encoderSW D5
+#define encoderDT D4
+#define encoderCLK D3
 
 // Times
 #define debounce 15    // ms debounce period to prevent flickering when pressing or releasing the button
