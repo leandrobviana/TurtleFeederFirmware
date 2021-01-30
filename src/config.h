@@ -68,6 +68,7 @@
 #define sensorPin A0    // IR Photodiode connected between 5V and A0
 #define sclPin D1      //SCL pin for OLED Screen 0.96"
 #define sdaPin D2      //SDA pin for OLED Screen 0.96"
+#define relePin D7     //Rele pin to control the LED White Strip
 
 //Screen
 #define OLED_RESET 0  // GPIO0

@@ -6,6 +6,5 @@
 #define MAX_SCREEN 1
 #define MIN_SCREEN 0
 
-
 void start_display();
-void drawScreen(int screenNumber, String status_message, String timer_time, boolean wifi_connected, boolean food_sensor, boolean food_low, boolean start_editing, boolean editing_blink, int timerHourSet, int timerMinuteSet);
+void drawScreen(int screenNumber, String status_message, String timer_time, boolean wifi_connected, boolean food_sensor, boolean food_low, boolean start_editing, boolean editing_blink, String what_is_editing, int timerHourSet, int timerMinuteSet, int firstFeedHour, int firstFeedMinute, int feedHowManyTimes, int feedMinutesInterval);

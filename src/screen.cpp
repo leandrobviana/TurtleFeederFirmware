@@ -4,6 +4,7 @@
 #include <Adafruit_SSD1306.h>
 #include <images.h>
 #include <time.h>
+#include <timer.h>
 
 Adafruit_SSD1306 OLED(OLED_RESET);
 
@@ -11,18 +12,6 @@ void start_display()
 {
     OLED.begin();
     OLED.clearDisplay();
-}
-
-String formatTime(int time)
-{
-    if (time < 10)
-    {
-        return "0" + String(time);
-    }
-    else
-    {
-        return String(time);
-    }
 }
 
 void top_message(boolean food_sensor, boolean food_low)
@@ -54,6 +43,25 @@ void wifi_status_img(boolean wifi_connected)
     }
 }
 
+String formatFeedMinutesInterval(int interval)
+{
+    if (interval < 10)
+    {
+        return "00" + String(interval);
+    }
+    else
+    {
+        if (interval < 100)
+        {
+            return "0" + String(interval);
+        }
+        else
+        {
+            return String(interval);
+        }
+    }
+}
+
 void drawHomeScreen(String status_message, String timer_time, boolean wifi_connected, boolean food_sensor, boolean food_low)
 {
     OLED.clearDisplay();
@@ -72,15 +80,18 @@ void drawHomeScreen(String status_message, String timer_time, boolean wifi_conne
     }
     else
     {
-        OLED.println("Food time: " + timer_time);
+        OLED.println("Food time: " + nextTriggerStr());
         OLED.println(status_message);
     }
 
     OLED.display(); //output 'display buffer' to screen
 }
 
-void drawEditTimerScreen(String timer_time, boolean wifi_connected, boolean food_sensor, boolean food_low, boolean start_editing, boolean editing_blink, int timerHourSet, int timerMinuteSet)
+void drawEditTimerScreen(String timer_time, boolean wifi_connected, boolean food_sensor, boolean food_low, boolean start_editing, boolean editing_blink, String what_is_editing, int firstFeedHour, int firstFeedMinute, int feedHowManyTimes, int feedMinutesInterval)
 {
+    String blink_in;
+    String blink_out;
+
     OLED.clearDisplay();
     OLED.setTextWrap(false);
     OLED.setTextSize(1);
@@ -91,17 +102,39 @@ void drawEditTimerScreen(String timer_time, boolean wifi_connected, boolean food
     top_message(food_sensor, food_low);
     wifi_status_img(wifi_connected);
 
-    OLED.println("food time: " + timer_time);
+    OLED.println("Food time: " + nextTriggerStr());
+
+    if (what_is_editing == "hour")
+    {
+        blink_in = "New: " + formatTime(firstFeedHour) + ":" + formatTime(firstFeedMinute) + " " + feedHowManyTimes + " x " + formatFeedMinutesInterval(feedMinutesInterval) + "min";
+        blink_out = "New:   :" + formatTime(firstFeedMinute) + " " + feedHowManyTimes + " x " + formatFeedMinutesInterval(feedMinutesInterval) + "min";
+    }
+    if (what_is_editing == "minute")
+    {
+        blink_in = "New: " + formatTime(firstFeedHour) + ":" + formatTime(firstFeedMinute) + " " + feedHowManyTimes + " x " + formatFeedMinutesInterval(feedMinutesInterval) + "min";
+        blink_out = "New: " + formatTime(firstFeedHour) + ":   " + feedHowManyTimes + " x " + formatFeedMinutesInterval(feedMinutesInterval) + "min";
+    }
+    if (what_is_editing == "time")
+    {
+        blink_in = "New: " + formatTime(firstFeedHour) + ":" + formatTime(firstFeedMinute) + " " + feedHowManyTimes + " x " + formatFeedMinutesInterval(feedMinutesInterval) + "min";
+        blink_out = "New: " + formatTime(firstFeedHour) + ":" + formatTime(firstFeedMinute) + "   x " + formatFeedMinutesInterval(feedMinutesInterval) + "min";
+    }
+    if (what_is_editing == "interval")
+    {
+        blink_in = "New: " + formatTime(firstFeedHour) + ":" + formatTime(firstFeedMinute) + " " + feedHowManyTimes + " x " + formatFeedMinutesInterval(feedMinutesInterval) + "min";
+        blink_out = "New: " + formatTime(firstFeedHour) + ":" + formatTime(firstFeedMinute) + " " + feedHowManyTimes + " x    min";
+    }
 
     if (start_editing)
     {
+
         if (editing_blink)
         {
-            OLED.println("New food time: " + formatTime(timerHourSet) + ":" + formatTime(timerMinuteSet));
+            OLED.println(blink_in);
         }
         else
         {
-            OLED.println("New food time: ");
+            OLED.println(blink_out);
         }
     }
     else
@@ -112,7 +145,7 @@ void drawEditTimerScreen(String timer_time, boolean wifi_connected, boolean food
     OLED.display(); //output 'display buffer' to screen
 }
 
-void drawScreen(int screenNumber, String status_message, String timer_time, boolean wifi_connected, boolean food_sensor, boolean food_low, boolean start_editing, boolean editing_blink, int timerHourSet, int timerMinuteSet)
+void drawScreen(int screenNumber, String status_message, String timer_time, boolean wifi_connected, boolean food_sensor, boolean food_low, boolean start_editing, boolean editing_blink, String what_is_editing, int timerHourSet, int timerMinuteSet, int firstFeedHour, int firstFeedMinute, int feedHowManyTimes, int feedMinutesInterval)
 {
     switch (screenNumber)
     {
@@ -120,35 +153,9 @@ void drawScreen(int screenNumber, String status_message, String timer_time, bool
         drawHomeScreen(status_message, timer_time, wifi_connected, food_sensor, food_low);
         break;
     case 1:
-        drawEditTimerScreen(timer_time, wifi_connected, food_sensor, food_low, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+        drawEditTimerScreen(timer_time, wifi_connected, food_sensor, food_low, start_editing, editing_blink, what_is_editing, firstFeedHour, firstFeedMinute, feedHowManyTimes, feedMinutesInterval);
         break;
     default:
         break;
     }
-}
-
-void show_msg_display(String text)
-{
-    //Add stuff into the 'display buffer'
-    OLED.clearDisplay();
-    OLED.setTextWrap(false);
-    OLED.setTextSize(1);
-    OLED.setTextColor(WHITE);
-    OLED.setCursor(0, 0);
-    OLED.println(text);
-    OLED.drawBitmap(110, 0, myBitmap, 15, 10, WHITE);
-    OLED.display(); //output 'display buffer' to screen
-}
-
-void show_msg_display_feed(String text)
-{
-    //Add stuff into the 'display buffer'
-    OLED.clearDisplay();
-    OLED.setTextWrap(false);
-    OLED.setTextSize(1);
-    OLED.setTextColor(WHITE);
-    OLED.setCursor(0, 10);
-    OLED.println(text);
-    OLED.drawBitmap(110, 0, myBitmap, 15, 10, WHITE);
-    OLED.display(); //output 'display buffer' to screen
 }

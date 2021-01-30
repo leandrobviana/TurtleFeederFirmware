@@ -52,6 +52,10 @@ boolean start_editing = false;
 
 boolean editing_minute = false;
 
+boolean editing_feed_how_many_times = false;
+
+boolean editing_feed_time_interval = false;
+
 boolean editing_blink = false;
 
 int timerHourSet = 0;
@@ -71,6 +75,15 @@ long encoderPosition = 0;
 
 int currentScreen = 0;
 
+int firstFeedHourSet = 0;
+int firstFeedMinuteSet = 0;
+
+int feedHowManyTimesSet = 0;
+
+int feedMinutesIntervalSet = 0;
+
+String what_is_editing;
+
 void setup()
 {
     Serial.begin(115200);
@@ -78,12 +91,13 @@ void setup()
 
     start_display();
     //show_msg_display("Starting...");
-    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
     pinMode(encoderSW, INPUT_PULLUP);
     //pinMode(led_RED, OUTPUT);
     //pinMode(led_GREEN, OUTPUT);
     //pinMode(led_BLUE, OUTPUT);
     pinMode(sensorPin, INPUT);
+    pinMode(relePin, OUTPUT); // Declara o relé como uma saída
     feeder.attach(servoPin);
     feeder.write(homePosition);
 
@@ -125,16 +139,27 @@ void setup()
     //RGB_color(0, standbyIntensivity, 0);
 
     //show_msg_display("Setup Done");
-    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
 
     timerHourSet = getTimerIntHour();
     timerMinuteSet = getTimerIntMinute();
+
+    firstFeedHourSet = getTimerIntFirstHour();
+    firstFeedMinuteSet = getTimerIntFirstMinute();
+
+    feedHowManyTimesSet = getTimerIntHowManyTimes();
+
+    feedMinutesIntervalSet = getTimerIntMinutesInterval();
 }
 
 void loop()
 {
     checkConnection();
     Alarm.delay(0);
+
+    //boolean editing_feed_how_many_times = false;
+
+    //boolean editing_feed_time_interval = false;
 
     long newPos = myEnc.read();
 
@@ -143,19 +168,36 @@ void loop()
         if (currentScreen < MAX_SCREEN && !start_editing)
         {
             currentScreen++;
-            //currentScreen = currentScreen + (newPos-encoderPosition)/2;
         }
 
-        if (timerHourSet < 23 && start_editing && !editing_minute)
+        if (firstFeedHourSet < 23 &&
+            start_editing &&
+            !editing_minute &&
+            !editing_feed_how_many_times &&
+            !editing_feed_time_interval)
         {
-            timerHourSet++;
-            //timerHourSet = timerHourSet + (newPos-encoderPosition)/2;
+            firstFeedHourSet++;
         }
 
-        if (timerMinuteSet < 59 && editing_minute)
+        if (firstFeedMinuteSet < 59 &&
+            editing_minute &&
+            !editing_feed_how_many_times &&
+            !editing_feed_time_interval)
         {
-            timerMinuteSet++;
-            //timerHourSet = timerHourSet + (newPos-encoderPosition)/2;
+            firstFeedMinuteSet++;
+        }
+
+        if (feedHowManyTimesSet < 6 &&
+            editing_feed_how_many_times &&
+            !editing_feed_time_interval)
+        {
+            feedHowManyTimesSet++;
+        }
+
+        if (feedMinutesIntervalSet < 240 &&
+            editing_feed_time_interval)
+        {
+            feedMinutesIntervalSet++;
         }
         encoderPosition = newPos;
     }
@@ -165,34 +207,40 @@ void loop()
         if (currentScreen > MIN_SCREEN && !start_editing)
         {
             currentScreen--;
-            //currentScreen = currentScreen - (newPos-encoderPosition)/2;
         }
 
-        if (timerHourSet > 0 && start_editing && !editing_minute)
+        if (firstFeedHourSet > 0 &&
+            start_editing &&
+            !editing_minute &&
+            !editing_feed_how_many_times &&
+            !editing_feed_time_interval)
         {
-            timerHourSet--;
-            //timerHourSet = timerHourSet - (newPos-encoderPosition)/2;
+            firstFeedHourSet--;
         }
 
-        if (timerMinuteSet > 0 && editing_minute)
+        if (firstFeedMinuteSet > 0 &&
+            editing_minute &&
+            !editing_feed_how_many_times &&
+            !editing_feed_time_interval)
         {
-            timerMinuteSet--;
-            //timerHourSet = timerHourSet + (newPos-encoderPosition)/2;
+            firstFeedMinuteSet--;
         }
+
+        if (feedHowManyTimesSet > 0 &&
+            editing_feed_how_many_times &&
+            !editing_feed_time_interval)
+        {
+            feedHowManyTimesSet--;
+        }
+
+        if (feedMinutesIntervalSet > 0 &&
+            editing_feed_time_interval)
+        {
+            feedMinutesIntervalSet--;
+        }
+
         encoderPosition = newPos;
     }
-
-    /*if (newPos != encoderPosition)
-    {
-        //encoderPosition = newPos;
-        Serial.println("---------------");
-        Serial.println("position");
-        Serial.println(encoderPosition);
-        Serial.println("screen");
-        Serial.println(currentScreen);
-        Serial.println("timerHourSet");
-        Serial.println(timerHourSet);
-    }*/
 
 #ifdef USE_MQTT
     client.loop();
@@ -212,7 +260,7 @@ void checkConnection()
     {
 
         //show_msg_display("No Wifi");
-        drawScreen(currentScreen, "Connecting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+        drawScreen(currentScreen, "Connecting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
         //RGB_color(255, 0, 0);
 
         Alarm.delay(0);
@@ -233,11 +281,11 @@ void blink_stuff()
 
         if (editing_blink)
         {
-            drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+            drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
         }
         else
         {
-            drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+            drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
         }
     }
 }
@@ -265,14 +313,36 @@ void buttonHandle()
             {
                 if (editing_minute)
                 {
-                    start_editing = !start_editing;
-                    setTimer(timerHourSet, timerMinuteSet);
+                    //start_editing = !start_editing;
+                    //setTimer(timerHourSet, timerMinuteSet);
+                    if (editing_feed_how_many_times)
+                    {
+                        if (editing_feed_time_interval)
+                        {
+                            start_editing = !start_editing;
+                            editing_minute = !editing_minute;
+                            editing_feed_how_many_times = !editing_feed_how_many_times;
+                            setTimer(firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
+                        }
+                        editing_feed_time_interval = !editing_feed_time_interval;
+                        what_is_editing = "interval";
+                    }
+                    else
+                    {
+                        editing_feed_how_many_times = !editing_feed_how_many_times;
+                        what_is_editing = "time";
+                    }
                 }
-                editing_minute = !editing_minute;
+                else
+                {
+                    editing_minute = !editing_minute;
+                    what_is_editing = "minute";
+                }
             }
             else
             {
                 start_editing = !start_editing;
+                what_is_editing = "hour";
             }
         }
     }
@@ -302,7 +372,7 @@ void ledHandle()
         outOfFoodLED = false;
         //RGB_color(0, standbyIntensivity, 0); // Default standby
         //show_msg_display("Wait time");
-        drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, timerHourSet, timerMinuteSet);
+        drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
     }
 }
 
