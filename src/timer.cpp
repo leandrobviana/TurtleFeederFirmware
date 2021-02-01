@@ -29,29 +29,41 @@ int timerMinute;
 
 int firstFeedHour;
 int firstFeedMinute;
-
 int feedHowManyTimes;
-
 int feedMinutesInterval;
+int feedPortion;
 
-int currentFeedInterval = 0;
+int lightsOnHour;
+int lightsOnMinute;
+int lightsOffHour;
+int lightsOffMinute;
 
 AlarmID_t alarms[dtNBR_ALARMS];
+AlarmID_t alarmsLights[dtNBR_ALARMS];
 
 void RegularFeed()
 {
-    Feed(regularFeed);
+    Feed(regularFeed + feedPortion);
 }
 
-void turnOnLights(int turn_on)
+void lightsOn()
 {
-    digitalWrite(relePin, turn_on);
-    Serial.println(digitalRead(relePin));
+    digitalWrite(relePin, HIGH);
+}
+
+void lightsOff()
+{
+    digitalWrite(relePin, LOW);
+}
+
+void changeLights()
+{
+    digitalWrite(relePin, !digitalRead(relePin));
 }
 
 void initTimer()
 {
-    EEPROM.begin(6);
+    EEPROM.begin(11);
     delay(10);
     if (EEPROM.read(0) == 1)
     {
@@ -59,7 +71,12 @@ void initTimer()
         firstFeedMinute = EEPROM.read(2);
         feedHowManyTimes = EEPROM.read(3);
         feedMinutesInterval = EEPROM.read(4);
-        setNextFeedTime();
+        lightsOnHour = EEPROM.read(5);
+        lightsOnMinute = EEPROM.read(6);
+        lightsOffHour = EEPROM.read(7);
+        lightsOffMinute = EEPROM.read(8);
+        feedPortion = EEPROM.read(9);
+        setNextFeedandLightsTime();
     }
     EEPROM.end();
 }
@@ -76,7 +93,7 @@ String formatTime(int time)
     }
 }
 
-void setNextFeedTime()
+void setNextFeedandLightsTime()
 {
 
     Serial.println(formatTime(hour()) + ":" + formatTime(minute()));
@@ -114,6 +131,9 @@ void setNextFeedTime()
         Serial.println(formatTime(next_feed_hour) + ":" + formatTime(next_feed_minute));
     }
 
+    alarmsLights[0] = Alarm.alarmRepeat(lightsOnHour, lightsOnMinute, 0, lightsOn);
+    alarmsLights[1] = Alarm.alarmRepeat(lightsOffHour, lightsOffMinute, 0, lightsOff);
+
     Serial.println("Alarm count: ");
     Serial.println(Alarm.count());
 
@@ -121,26 +141,74 @@ void setNextFeedTime()
     {
         if (Alarm.isAlarm(alarms[i]))
         {
-            Serial.println("next ");
+            Serial.println("next food ");
             Serial.println(formatTime(hour(Alarm.getNextTrigger(alarms[i]))) + ":" + formatTime(minute(Alarm.getNextTrigger(alarms[i]))));
         }
     }
+    Serial.println("next lights ");
+    Serial.println(formatTime(hour(Alarm.getNextTrigger(alarmsLights[0]))) + ":" + formatTime(minute(Alarm.getNextTrigger(alarmsLights[0]))));
+    Serial.println(formatTime(hour(Alarm.getNextTrigger(alarmsLights[1]))) + ":" + formatTime(minute(Alarm.getNextTrigger(alarmsLights[1]))));
 }
 
 String nextTriggerStr()
 {
-    return formatTime(hour(Alarm.getNextTrigger())) + ":" + formatTime(minute(Alarm.getNextTrigger()));
+    String next_feed_string;
+    boolean found_next = false;
+    for (int i = 0; i < feedHowManyTimes; i++)
+    {
+        if (hour(Alarm.getNextTrigger(alarms[i])) > hour())
+        {
+            next_feed_string = formatTime(hour(Alarm.getNextTrigger(alarms[i]))) + ":" + formatTime(minute(Alarm.getNextTrigger(alarms[i])));
+            found_next = true;
+            break;
+        }
+        else
+        {
+            if (hour(Alarm.getNextTrigger(alarms[i])) == hour())
+            {
+                if (minute(Alarm.getNextTrigger(alarms[i])) > minute())
+                {
+                    next_feed_string = formatTime(hour(Alarm.getNextTrigger(alarms[i]))) + ":" + formatTime(minute(Alarm.getNextTrigger(alarms[i])));
+                    found_next = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!found_next)
+    {
+        next_feed_string = formatTime(hour(Alarm.getNextTrigger(alarms[0]))) + ":" + formatTime(minute(Alarm.getNextTrigger(alarms[0])));
+    }
+
+    return next_feed_string;
 }
 
-void setTimer(int hour, int minute, int times, int interval)
+String lightsOnString()
 {
-    EEPROM.begin(6);
+    return formatTime(hour(Alarm.getNextTrigger(alarmsLights[0]))) + ":" + formatTime(minute(Alarm.getNextTrigger(alarmsLights[0])));
+}
+
+String lightsOffString()
+{
+    return formatTime(hour(Alarm.getNextTrigger(alarmsLights[1]))) + ":" + formatTime(minute(Alarm.getNextTrigger(alarmsLights[1])));
+}
+
+void setTimer(int hour, int minute, int times, int interval,
+              int lightsOnHour, int lightsOnMinute, int lightsOffHour, int lightsOffMinute, int feedPortion)
+{
+    EEPROM.begin(11);
     delay(10);
     EEPROM.write(0, 1);
     EEPROM.write(1, hour);
     EEPROM.write(2, minute);
     EEPROM.write(3, times);
     EEPROM.write(4, interval);
+    EEPROM.write(5, lightsOnHour);
+    EEPROM.write(6, lightsOnMinute);
+    EEPROM.write(7, lightsOffHour);
+    EEPROM.write(8, lightsOffMinute);
+    EEPROM.write(9, feedPortion);
     EEPROM.commit();
     EEPROM.end();
     Serial.println("Timer data saved to EEPROM. Restarting.");
@@ -242,9 +310,35 @@ int getTimerIntMinutesInterval()
 {
     return feedMinutesInterval;
 }
+
+int getFeedPortion()
+{
+    return feedPortion;
+}
+
+int getTimerLightsOnHour()
+{
+    return lightsOnHour;
+}
+
+int getTimerLightsOnMinute()
+{
+    return lightsOnMinute;
+}
+
+int getTimerLightsOffHour()
+{
+    return lightsOffHour;
+}
+
+int getTimerLightsOffMinute()
+{
+    return lightsOffMinute;
+}
+
 void disableTimer()
 {
-    EEPROM.begin(6);
+    EEPROM.begin(11);
     delay(10);
     EEPROM.write(0, 0);
     EEPROM.commit();

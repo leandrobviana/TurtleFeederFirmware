@@ -56,7 +56,13 @@ boolean editing_feed_how_many_times = false;
 
 boolean editing_feed_time_interval = false;
 
+boolean editing_feed_portion = false;
+
 boolean editing_blink = false;
+
+boolean editing_minute_on = false;
+boolean editing_hour_off = false;
+boolean editing_minute_off = false;
 
 int timerHourSet = 0;
 int timerMinuteSet = 0;
@@ -77,10 +83,14 @@ int currentScreen = 0;
 
 int firstFeedHourSet = 0;
 int firstFeedMinuteSet = 0;
-
 int feedHowManyTimesSet = 0;
-
 int feedMinutesIntervalSet = 0;
+int feedPortionSet = 0;
+
+int lightOnHourSet = 0;
+int lightOnMinuteSet = 0;
+int lightOffHourSet = 0;
+int lightOffMinuteSet = 0;
 
 String what_is_editing;
 
@@ -91,13 +101,17 @@ void setup()
 
     start_display();
     //show_msg_display("Starting...");
-    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
+    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing,
+               editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet,
+               firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet, lightOnHourSet,
+               lightOnMinuteSet, lightOffHourSet, lightOffMinuteSet, feedPortionSet);
     pinMode(encoderSW, INPUT_PULLUP);
     //pinMode(led_RED, OUTPUT);
     //pinMode(led_GREEN, OUTPUT);
     //pinMode(led_BLUE, OUTPUT);
     pinMode(sensorPin, INPUT);
     pinMode(relePin, OUTPUT); // Declara o relé como uma saída
+    digitalWrite(relePin, LOW);
     feeder.attach(servoPin);
     feeder.write(homePosition);
 
@@ -139,17 +153,24 @@ void setup()
     //RGB_color(0, standbyIntensivity, 0);
 
     //show_msg_display("Setup Done");
-    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
+    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(),
+               outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet,
+               timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet,
+               feedMinutesIntervalSet, lightOnHourSet, lightOnMinuteSet, lightOffHourSet, lightOffMinuteSet, feedPortionSet);
 
     timerHourSet = getTimerIntHour();
     timerMinuteSet = getTimerIntMinute();
 
     firstFeedHourSet = getTimerIntFirstHour();
     firstFeedMinuteSet = getTimerIntFirstMinute();
-
     feedHowManyTimesSet = getTimerIntHowManyTimes();
-
     feedMinutesIntervalSet = getTimerIntMinutesInterval();
+    feedPortionSet = getFeedPortion();
+
+    lightOnHourSet = getTimerLightsOnHour();
+    lightOnMinuteSet = getTimerLightsOnMinute();
+    lightOffHourSet = getTimerLightsOffHour();
+    lightOffMinuteSet = getTimerLightsOffMinute();
 }
 
 void loop()
@@ -170,35 +191,82 @@ void loop()
             currentScreen++;
         }
 
-        if (firstFeedHourSet < 23 &&
-            start_editing &&
-            !editing_minute &&
-            !editing_feed_how_many_times &&
-            !editing_feed_time_interval)
+        if (currentScreen == 1)
         {
-            firstFeedHourSet++;
+            if (firstFeedHourSet < 23 &&
+                start_editing &&
+                !editing_minute &&
+                !editing_feed_how_many_times &&
+                !editing_feed_time_interval &&
+                !editing_feed_portion)
+            {
+                firstFeedHourSet++;
+            }
+
+            if (firstFeedMinuteSet < 59 &&
+                editing_minute &&
+                !editing_feed_how_many_times &&
+                !editing_feed_time_interval &&
+                !editing_feed_portion)
+            {
+                firstFeedMinuteSet++;
+            }
+
+            if (feedHowManyTimesSet < 6 &&
+                editing_feed_how_many_times &&
+                !editing_feed_time_interval &&
+                !editing_feed_portion)
+            {
+                feedHowManyTimesSet++;
+            }
+
+            if (feedMinutesIntervalSet < 240 &&
+                editing_feed_time_interval &&
+                !editing_feed_portion)
+            {
+                feedMinutesIntervalSet++;
+            }
+
+            if (feedPortionSet < 8 &&
+                editing_feed_portion)
+            {
+                feedPortionSet++;
+            }
         }
 
-        if (firstFeedMinuteSet < 59 &&
-            editing_minute &&
-            !editing_feed_how_many_times &&
-            !editing_feed_time_interval)
+        if (currentScreen == 3)
         {
-            firstFeedMinuteSet++;
+            if (lightOnHourSet < 23 &&
+                start_editing &&
+                !editing_minute_on &&
+                !editing_hour_off &&
+                !editing_minute_off)
+            {
+                lightOnHourSet++;
+            }
+
+            if (lightOnMinuteSet < 59 &&
+                editing_minute_on &&
+                !editing_hour_off &&
+                !editing_minute_off)
+            {
+                lightOnMinuteSet++;
+            }
+
+            if (lightOffHourSet < 23 &&
+                editing_hour_off &&
+                !editing_minute_off)
+            {
+                lightOffHourSet++;
+            }
+
+            if (lightOffMinuteSet < 59 &&
+                editing_minute_off)
+            {
+                lightOffMinuteSet++;
+            }
         }
 
-        if (feedHowManyTimesSet < 6 &&
-            editing_feed_how_many_times &&
-            !editing_feed_time_interval)
-        {
-            feedHowManyTimesSet++;
-        }
-
-        if (feedMinutesIntervalSet < 240 &&
-            editing_feed_time_interval)
-        {
-            feedMinutesIntervalSet++;
-        }
         encoderPosition = newPos;
     }
 
@@ -209,34 +277,80 @@ void loop()
             currentScreen--;
         }
 
-        if (firstFeedHourSet > 0 &&
-            start_editing &&
-            !editing_minute &&
-            !editing_feed_how_many_times &&
-            !editing_feed_time_interval)
+        if (currentScreen == 1)
         {
-            firstFeedHourSet--;
+            if (firstFeedHourSet > 0 &&
+                start_editing &&
+                !editing_minute &&
+                !editing_feed_how_many_times &&
+                !editing_feed_time_interval &&
+                !editing_feed_portion)
+            {
+                firstFeedHourSet--;
+            }
+
+            if (firstFeedMinuteSet > 0 &&
+                editing_minute &&
+                !editing_feed_how_many_times &&
+                !editing_feed_time_interval &&
+                !editing_feed_portion)
+            {
+                firstFeedMinuteSet--;
+            }
+
+            if (feedHowManyTimesSet > 0 &&
+                editing_feed_how_many_times &&
+                !editing_feed_time_interval &&
+                !editing_feed_portion)
+            {
+                feedHowManyTimesSet--;
+            }
+
+            if (feedMinutesIntervalSet > 0 &&
+                editing_feed_time_interval &&
+                !editing_feed_portion)
+            {
+                feedMinutesIntervalSet--;
+            }
+
+            if (feedPortionSet > 0 &&
+                editing_feed_portion)
+            {
+                feedPortionSet--;
+            }
         }
 
-        if (firstFeedMinuteSet > 0 &&
-            editing_minute &&
-            !editing_feed_how_many_times &&
-            !editing_feed_time_interval)
+        if (currentScreen == 3)
         {
-            firstFeedMinuteSet--;
-        }
+            if (lightOnHourSet > 0 &&
+                start_editing &&
+                !editing_minute_on &&
+                !editing_hour_off &&
+                !editing_minute_off)
+            {
+                lightOnHourSet--;
+            }
 
-        if (feedHowManyTimesSet > 0 &&
-            editing_feed_how_many_times &&
-            !editing_feed_time_interval)
-        {
-            feedHowManyTimesSet--;
-        }
+            if (lightOnMinuteSet > 0 &&
+                editing_minute_on &&
+                !editing_hour_off &&
+                !editing_minute_off)
+            {
+                lightOnMinuteSet--;
+            }
 
-        if (feedMinutesIntervalSet > 0 &&
-            editing_feed_time_interval)
-        {
-            feedMinutesIntervalSet--;
+            if (lightOffHourSet > 0 &&
+                editing_hour_off &&
+                !editing_minute_off)
+            {
+                lightOffHourSet--;
+            }
+
+            if (lightOffMinuteSet > 0 &&
+                editing_minute_off)
+            {
+                lightOffMinuteSet--;
+            }
         }
 
         encoderPosition = newPos;
@@ -258,9 +372,11 @@ void checkConnection()
     wifi_connected = WiFi.status() == WL_CONNECTED;
     while (WiFi.status() != WL_CONNECTED)
     {
-
         //show_msg_display("No Wifi");
-        drawScreen(currentScreen, "Connecting...", "", wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
+        drawScreen(currentScreen, "Connecting...", "", wifi_connected, outOfFood(), outOfFoodLED,
+                   start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet,
+                   firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet, lightOnHourSet,
+                   lightOnMinuteSet, lightOffHourSet, lightOffMinuteSet, feedPortionSet);
         //RGB_color(255, 0, 0);
 
         Alarm.delay(0);
@@ -281,11 +397,17 @@ void blink_stuff()
 
         if (editing_blink)
         {
-            drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
+            drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected,
+                       outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet,
+                       timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet,
+                       feedMinutesIntervalSet, lightOnHourSet, lightOnMinuteSet, lightOffHourSet, lightOffMinuteSet, feedPortionSet);
         }
         else
         {
-            drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
+            drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected,
+                       outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet,
+                       timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet,
+                       feedMinutesIntervalSet, lightOnHourSet, lightOnMinuteSet, lightOffHourSet, lightOffMinuteSet, feedPortionSet);
         }
     }
 }
@@ -313,19 +435,28 @@ void buttonHandle()
             {
                 if (editing_minute)
                 {
-                    //start_editing = !start_editing;
-                    //setTimer(timerHourSet, timerMinuteSet);
                     if (editing_feed_how_many_times)
                     {
                         if (editing_feed_time_interval)
                         {
-                            start_editing = !start_editing;
-                            editing_minute = !editing_minute;
-                            editing_feed_how_many_times = !editing_feed_how_many_times;
-                            setTimer(firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
+                            if (editing_feed_portion)
+                            {
+                                start_editing = !start_editing;
+                                editing_minute = !editing_minute;
+                                editing_feed_how_many_times = !editing_feed_how_many_times;
+                                editing_feed_time_interval = !editing_feed_time_interval;
+                                setTimer(firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet,
+                                         feedMinutesIntervalSet, lightOnHourSet, lightOnMinuteSet,
+                                         lightOffHourSet, lightOffMinuteSet, feedPortionSet);
+                            }
+                            editing_feed_portion = !editing_feed_portion;
+                            what_is_editing = "feed_portion";
                         }
-                        editing_feed_time_interval = !editing_feed_time_interval;
-                        what_is_editing = "interval";
+                        else
+                        {
+                            editing_feed_time_interval = !editing_feed_time_interval;
+                            what_is_editing = "interval";
+                        }
                     }
                     else
                     {
@@ -343,6 +474,50 @@ void buttonHandle()
             {
                 start_editing = !start_editing;
                 what_is_editing = "hour";
+            }
+        }
+
+        if (currentScreen == 2)
+        {
+            changeLights();
+        }
+
+        if (currentScreen == 3)
+        {
+            if (start_editing)
+            {
+                if (editing_minute_on)
+                {
+                    if (editing_hour_off)
+                    {
+                        if (editing_minute_off)
+                        {
+                            start_editing = !start_editing;
+                            editing_minute_on = !editing_minute_on;
+                            editing_hour_off = !editing_hour_off;
+                            setTimer(firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet,
+                                     feedMinutesIntervalSet, lightOnHourSet, lightOnMinuteSet,
+                                     lightOffHourSet, lightOffMinuteSet, feedPortionSet);
+                        }
+                        editing_minute_off = !editing_minute_off;
+                        what_is_editing = "minuteLightOff";
+                    }
+                    else
+                    {
+                        editing_hour_off = !editing_hour_off;
+                        what_is_editing = "hourLightOff";
+                    }
+                }
+                else
+                {
+                    editing_minute_on = !editing_minute_on;
+                    what_is_editing = "minuteLightOn";
+                }
+            }
+            else
+            {
+                start_editing = !start_editing;
+                what_is_editing = "hourLightOn";
             }
         }
     }
@@ -372,7 +547,10 @@ void ledHandle()
         outOfFoodLED = false;
         //RGB_color(0, standbyIntensivity, 0); // Default standby
         //show_msg_display("Wait time");
-        drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected, outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet, timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet, feedMinutesIntervalSet);
+        drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected,
+                   outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet,
+                   timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet,
+                   feedMinutesIntervalSet, lightOnHourSet, lightOnMinuteSet, lightOffHourSet, lightOffMinuteSet, feedPortionSet);
     }
 }
 

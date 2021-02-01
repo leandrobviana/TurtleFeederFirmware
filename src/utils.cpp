@@ -50,7 +50,8 @@ void Feed(int times)
 {
     //RGB_color(128, 64, 0);
     //show_msg_display_feed("FEEDING");
-    drawScreen(0, "Feeding", getTimerHour() + ":" + getTimerMinute(), get_wifi_connected(), outOfFood(), get_outOfFoodLED(), false, false, "", 0, 0, 0, 0, 0, 0);
+    drawScreen(0, "Feeding", getTimerHour() + ":" + getTimerMinute(), get_wifi_connected(),
+               outOfFood(), get_outOfFoodLED(), false, false, "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, getFeedPortion());
     feeder.attach(servoPin);
     for (int i = 0; i < times; i++)
     {

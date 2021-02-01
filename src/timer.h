@@ -22,9 +22,11 @@ extern int timerMinute;
 
 void RegularFeed();
 void initTimer();
-void setTimer(int hour, int minute, int times, int interval);
+void setTimer(int hour, int minute, int times, int interval,
+              int lightsOnHour, int lightsOnMinute,
+              int lightsOffHour, int lightsOffMinute, int feedPortion);
 void disableTimer();
-void setNextFeedTime();
+void setNextFeedandLightsTime();
 String getTimerHour();
 String getTimerMinute();
 int getTimerIntHour();
@@ -39,3 +41,11 @@ int getTimerIntHowManyTimes();
 int getTimerIntMinutesInterval();
 String formatTime(int time);
 String nextTriggerStr();
+String lightsOnString();
+String lightsOffString();
+void changeLights();
+int getTimerLightsOnHour();
+int getTimerLightsOnMinute();
+int getTimerLightsOffHour();
+int getTimerLightsOffMinute();
+int getFeedPortion();
