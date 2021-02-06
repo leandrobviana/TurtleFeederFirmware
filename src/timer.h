@@ -49,3 +49,5 @@ int getTimerLightsOnMinute();
 int getTimerLightsOffHour();
 int getTimerLightsOffMinute();
 int getFeedPortion();
+void lightsOn();
+void lightsOff();

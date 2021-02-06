@@ -23,6 +23,10 @@
 void buttonHandle();
 void ledHandle();
 void checkConnection();
+void blynkNotify(String text);
+void blynkAddToTable(String text, String time);
+void blynkLightButton(int value);
+void blynkTimeString(String value);
 
 boolean get_wifi_connected();
 boolean get_outOfFoodLED();

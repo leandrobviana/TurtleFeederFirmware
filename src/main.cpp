@@ -19,6 +19,7 @@
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
 #include <TimeAlarms.h>
 #include <TimeLib.h>
 #include <config.h>
@@ -36,6 +37,11 @@
 #include <telegram.h>
 #endif
 #include <timer.h>
+
+#define BLYNK_PRINT Serial
+// You should get Auth Token in the Blynk App.
+// Go to the Project Settings (nut icon).
+char auth[] = "AuthToken";
 
 const char *ssid = STASSID;
 const char *password = STAPSK;
@@ -93,6 +99,70 @@ int lightOffHourSet = 0;
 int lightOffMinuteSet = 0;
 
 String what_is_editing;
+
+WidgetTable table;
+BLYNK_ATTACH_WIDGET(table, V1);
+
+int rowIndex = 0;
+
+BLYNK_CONNECTED()
+{
+    Blynk.syncVirtual(V0);
+    Blynk.syncVirtual(V2);
+    Blynk.syncVirtual(V3);
+}
+
+BLYNK_WRITE(V0)
+{
+    int buttonState = param.asInt();
+    if (buttonState == 1)
+    {
+        Feed(1);
+    }
+}
+
+BLYNK_WRITE(V2)
+{
+    int buttonState = param.asInt();
+    if (buttonState == 1)
+    {
+        digitalWrite(relePin, HIGH);
+        blynkAddToTable("Lights on", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        blynkNotify("Lights on " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+    }
+    else
+    {
+        digitalWrite(relePin, LOW);
+        blynkAddToTable("Lights off", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        blynkNotify("Lights off " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+    }
+}
+
+void blynkLightButton(int value)
+{
+    Blynk.virtualWrite(V2, value);
+}
+
+void blynkTimeString(String value)
+{
+    Blynk.virtualWrite(V3, value);
+}
+
+void blynkNotify(String text)
+{
+    //Blynk.notify(text);
+    Blynk.email("Fish Feed Report", text);
+}
+
+void blynkAddToTable(String text, String time)
+{
+    //Blynk.virtualWrite(V1, "add", rowIndex);
+    Serial.println("rowIndex");
+    Serial.println(rowIndex);
+    table.addRow(rowIndex, text, time);
+    table.pickRow(rowIndex);
+    rowIndex++;
+}
 
 void setup()
 {
@@ -171,10 +241,15 @@ void setup()
     lightOnMinuteSet = getTimerLightsOnMinute();
     lightOffHourSet = getTimerLightsOffHour();
     lightOffMinuteSet = getTimerLightsOffMinute();
+
+    Blynk.begin(auth, ssid, password);
+
+    table.clear();
 }
 
 void loop()
 {
+    Blynk.run();
     checkConnection();
     Alarm.delay(0);
 

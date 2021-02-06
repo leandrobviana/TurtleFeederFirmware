@@ -68,7 +68,17 @@ void Feed(int times)
         sendMessageToAllSubscribedUsers(tg_OUTOFFOOD);
     }
 #endif
-    //RGB_color(0, standbyIntensivity, 0);
+
+    if (outOfFood())
+    {
+        blynkNotify("Low on Food! Feeded at " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        blynkAddToTable("Low on Food! Feeded", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+    }
+    else
+    {
+        blynkNotify("Feeded at " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        blynkAddToTable("Feeded", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+    }
 }
 
 boolean outOfFood()

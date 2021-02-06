@@ -23,6 +23,7 @@
 #include <utils.h>
 #include <timer.h>
 #include <time.h>
+#include <main.h>
 
 int timerHour;
 int timerMinute;
@@ -49,15 +50,30 @@ void RegularFeed()
 void lightsOn()
 {
     digitalWrite(relePin, HIGH);
+    blynkAddToTable("Lights on", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+    blynkNotify("Lights on " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
 }
 
 void lightsOff()
 {
     digitalWrite(relePin, LOW);
+    blynkAddToTable("Lights off", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+    blynkNotify("Lights off " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
 }
 
 void changeLights()
 {
+    blynkLightButton(!digitalRead(relePin));
+    if (!digitalRead(relePin) == 1)
+    {
+        blynkAddToTable("Lights on", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        blynkNotify("Lights on " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+    }
+    else
+    {
+        blynkAddToTable("Lights off", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        blynkNotify("Lights off " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+    }
     digitalWrite(relePin, !digitalRead(relePin));
 }
 
