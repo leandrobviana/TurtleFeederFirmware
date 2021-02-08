@@ -92,6 +92,7 @@ int firstFeedMinuteSet = 0;
 int feedHowManyTimesSet = 0;
 int feedMinutesIntervalSet = 0;
 int feedPortionSet = 0;
+int blynkFeedPortionSet = 0;
 
 int lightOnHourSet = 0;
 int lightOnMinuteSet = 0;
@@ -101,51 +102,123 @@ int lightOffMinuteSet = 0;
 String what_is_editing;
 
 WidgetTable table;
-BLYNK_ATTACH_WIDGET(table, V1);
+BLYNK_ATTACH_WIDGET(table, blynkTable);
 
 int rowIndex = 0;
 
+boolean sendedStartNotify = false;
+
+boolean updateFeed = false;
+
+int blynkLightsButtonValue;
+
+boolean updateLights;
+
 BLYNK_CONNECTED()
 {
-    Blynk.syncVirtual(V0);
-    Blynk.syncVirtual(V2);
-    Blynk.syncVirtual(V3);
+    //Blynk.syncVirtual(blynkFeedButton);
+    //Blynk.syncVirtual(blynkLightsButton);
+    //Blynk.syncVirtual(blynkNextFeedText);
+    //Blynk.syncVirtual(blynkFoodLevel);
+
+    //seconds from the start of a day. 0 - min, 86399 - max
+    int FirstTimeFood = (getTimerIntFirstHour() * 60 + getTimerIntFirstMinute()) * 60;
+
+    int LightsOnTime = (getTimerLightsOnHour() * 60 + getTimerLightsOnMinute()) * 60;
+    int LightsOffTime = (getTimerLightsOffHour() * 60 + getTimerLightsOffMinute()) * 60;
+
+    //timezone
+    //full list of supported timezones could be found here
+    //https://www.mkyong.com/java/java-display-list-of-timezone-with-gmt/
+    char tz[] = "America/Sao_Paulo";
+
+    Blynk.virtualWrite(blynkNextFeedText, nextTriggerStr());
+
+    Blynk.virtualWrite(blynkFirstTimeFood, FirstTimeFood, FirstTimeFood, tz);
+    Blynk.virtualWrite(blynkHowManyTimesFeed, getTimerIntHowManyTimes());
+    Blynk.virtualWrite(blynkIntervalFeed, getTimerIntMinutesInterval());
+    Blynk.virtualWrite(blynkPortionFeed, getFeedPortion() + 1);
+
+    Blynk.virtualWrite(blynkLights, LightsOnTime, LightsOffTime, tz);
 }
 
-BLYNK_WRITE(V0)
+BLYNK_WRITE(blynkFeedButton)
 {
-    int buttonState = param.asInt();
-    if (buttonState == 1)
+    //int buttonState = param.asInt();
+    if (param.asInt() == 1)
     {
         Feed(1);
+        //updateFeed = true;
     }
 }
 
-BLYNK_WRITE(V2)
+BLYNK_WRITE(blynkLightsButton)
+{
+    blynkLightsButtonValue = param.asInt();
+    updateLights = true;
+}
+
+BLYNK_WRITE(blynkFirstTimeFood)
+{
+    TimeInputParam t(param);
+    if (t.hasStartTime())
+    {
+        firstFeedHourSet = t.getStartHour();
+        firstFeedMinuteSet = t.getStartMinute();
+    }
+}
+
+BLYNK_WRITE(blynkHowManyTimesFeed)
+{
+    feedHowManyTimesSet = param.asInt();
+}
+
+BLYNK_WRITE(blynkIntervalFeed)
+{
+    feedMinutesIntervalSet = param.asInt();
+}
+
+BLYNK_WRITE(blynkPortionFeed)
+{
+    blynkFeedPortionSet = param.asInt() - 1;
+}
+
+BLYNK_WRITE(blynkButtonSetFeedTime)
 {
     int buttonState = param.asInt();
     if (buttonState == 1)
     {
-        digitalWrite(relePin, HIGH);
-        blynkAddToTable("Lights on", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
-        blynkNotify("Lights on " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        setTimer(firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet,
+                 feedMinutesIntervalSet, lightOnHourSet, lightOnMinuteSet,
+                 lightOffHourSet, lightOffMinuteSet, blynkFeedPortionSet);
     }
-    else
+}
+
+BLYNK_WRITE(blynkLights)
+{
+    TimeInputParam t(param);
+    if (t.hasStartTime() && t.hasStopTime())
     {
-        digitalWrite(relePin, LOW);
-        blynkAddToTable("Lights off", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
-        blynkNotify("Lights off " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        lightOnHourSet = t.getStartHour();
+        lightOnMinuteSet = t.getStartMinute();
+        lightOffHourSet = t.getStopHour();
+        lightOffMinuteSet = t.getStopMinute();
     }
+}
+
+BLYNK_WRITE(blynkRestartESP)
+{
+    ESP.restart();
 }
 
 void blynkLightButton(int value)
 {
-    Blynk.virtualWrite(V2, value);
+    Blynk.virtualWrite(blynkLightsButton, value);
 }
 
 void blynkTimeString(String value)
 {
-    Blynk.virtualWrite(V3, value);
+    Blynk.virtualWrite(blynkNextFeedText, value);
 }
 
 void blynkNotify(String text)
@@ -156,9 +229,6 @@ void blynkNotify(String text)
 
 void blynkAddToTable(String text, String time)
 {
-    //Blynk.virtualWrite(V1, "add", rowIndex);
-    Serial.println("rowIndex");
-    Serial.println(rowIndex);
     table.addRow(rowIndex, text, time);
     table.pickRow(rowIndex);
     rowIndex++;
@@ -223,10 +293,6 @@ void setup()
     //RGB_color(0, standbyIntensivity, 0);
 
     //show_msg_display("Setup Done");
-    drawScreen(currentScreen, "Starting...", "", wifi_connected, outOfFood(),
-               outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet,
-               timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet,
-               feedMinutesIntervalSet, lightOnHourSet, lightOnMinuteSet, lightOffHourSet, lightOffMinuteSet, feedPortionSet);
 
     timerHourSet = getTimerIntHour();
     timerMinuteSet = getTimerIntMinute();
@@ -242,14 +308,70 @@ void setup()
     lightOffHourSet = getTimerLightsOffHour();
     lightOffMinuteSet = getTimerLightsOffMinute();
 
+    drawScreen(currentScreen, "Connecting Blynk...", "", wifi_connected, outOfFood(),
+               outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet,
+               timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet,
+               feedMinutesIntervalSet, lightOnHourSet, lightOnMinuteSet, lightOffHourSet, lightOffMinuteSet, feedPortionSet);
+
     Blynk.begin(auth, ssid, password);
 
     table.clear();
 }
 
+void setUpdateFeed(boolean state)
+{
+    updateFeed = state;
+}
+
+void setUpdateLights(boolean state)
+{
+    updateLights = state;
+}
+
 void loop()
 {
     Blynk.run();
+
+    if (!sendedStartNotify)
+    {
+        blynkNotify("Started Now " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        Blynk.notify("Started Now " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        sendedStartNotify = true;
+    }
+
+    if (updateFeed)
+    {
+        Blynk.virtualWrite(blynkNextFeedText, nextTriggerStr());
+        if (outOfFood())
+        {
+            blynkNotify("Low on Food! Feeded at " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+            blynkAddToTable("Low on Food! Feeded", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        }
+        else
+        {
+            blynkNotify("Feeded at " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+            blynkAddToTable("Feeded", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        }
+        updateFeed = false;
+    }
+
+    if (updateLights)
+    {
+        if (blynkLightsButtonValue == 1)
+        {
+            digitalWrite(relePin, HIGH);
+            blynkAddToTable("Lights on", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+            blynkNotify("Lights on " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        }
+        else
+        {
+            digitalWrite(relePin, LOW);
+            blynkAddToTable("Lights off", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+            blynkNotify("Lights off " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
+        }
+        updateLights = false;
+    }
+
     checkConnection();
     Alarm.delay(0);
 
@@ -616,16 +738,20 @@ void ledHandle()
     if (outOfFood())
     {
         blink_stuff();
+        Blynk.virtualWrite(blynkFoodLevel, "Low");
     }
     else
     {
         outOfFoodLED = false;
+
         //RGB_color(0, standbyIntensivity, 0); // Default standby
         //show_msg_display("Wait time");
         drawScreen(currentScreen, "Waiting", getTimerHour() + ":" + getTimerMinute(), wifi_connected,
                    outOfFood(), outOfFoodLED, start_editing, editing_blink, what_is_editing, timerHourSet,
                    timerMinuteSet, firstFeedHourSet, firstFeedMinuteSet, feedHowManyTimesSet,
                    feedMinutesIntervalSet, lightOnHourSet, lightOnMinuteSet, lightOffHourSet, lightOffMinuteSet, feedPortionSet);
+
+        Blynk.virtualWrite(blynkFoodLevel, "Ok");
     }
 }
 

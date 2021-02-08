@@ -18,67 +18,81 @@
  */
 
 // Wifi
-#define STASSID "GFI"    // SSID of your wifi network
-#define STAPSK "00000000"    // Password of your wifi network
+#define STASSID "GFI"     // SSID of your wifi network
+#define STAPSK "00000000" // Password of your wifi network
 
 // OTA
 //#define USE_OTA    // Uncomment to enable upgrading firmware via espota
 #ifdef USE_OTA
-    #define OTAhostname "TurtleFeederInator"    // mDNS hostname
-    #define OTAPassword "Password123"    // Password for upgrading firmware via espota
+#define OTAhostname "TurtleFeederInator" // mDNS hostname
+#define OTAPassword "Password123"        // Password for upgrading firmware via espota
 #endif
 
 // Telegram
 //#define USE_TELEGRAM    // Uncomment to enable Telegram Bot feature
 #ifdef USE_TELEGRAM
-    #define BOTtoken "123456789:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    // your Bot Token (Get from Botfather)
-    #define telegramSecret "MySecret"
-    #define language 0    // [en - 0, pl - 1]
+#define BOTtoken "123456789:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" // your Bot Token (Get from Botfather)
+#define telegramSecret "MySecret"
+#define language 0 // [en - 0, pl - 1]
 #endif
 
 // MQTT
 //#define USE_MQTT    // Uncomment to enable MQTT feature
 #ifdef USE_MQTT
-    #define mqttServer "192.168.1.xxx"    // Address/IP of your MQTT broker
-    #define mqttPort 1883
-    #define mqttUser "user"
-    #define mqttPassword "Password123"
-    #define mqttTopic "turtlefeeder/feed"
+#define mqttServer "192.168.1.xxx" // Address/IP of your MQTT broker
+#define mqttPort 1883
+#define mqttUser "user"
+#define mqttPassword "Password123"
+#define mqttTopic "turtlefeeder/feed"
 #endif
 
 // Time
-#define ntpServerName "pl.pool.ntp.org"    // Time server pool address
-#define timeZone -3    // Your timezone (CET by default)
+#define ntpServerName "pl.pool.ntp.org" // Time server pool address
+#define timeZone -3                     // Your timezone (CET by default)
 //#define useDST    // Comment this line if your country doesn't use daylight saving time
 #ifdef useDST
-    #define DSTshift 60    // Time shift of DST in minutes
+#define DSTshift 60 // Time shift of DST in minutes
 #endif
 
 // Misc
-#define regularFeed 1    // Determines how big a portion should be
+#define regularFeed 1        // Determines how big a portion should be
 #define sensorTrigger 400    // (0-1023) lower is more sensitive
-#define homePosition 8    // (0-180) Default servo position in degrees
-#define standbyIntensivity 8    // (0-254) Intensivity of standby green led
+#define homePosition 8       // (0-180) Default servo position in degrees
+#define standbyIntensivity 8 // (0-254) Intensivity of standby green led
 
 // Pins
 //#define led_RED D7
 //#define led_GREEN D6
 //#define led_BLUE D5
-#define servoPin D6    // SG-90 Servo yellow cable
-#define sensorPin A0    // IR Photodiode connected between 5V and A0
-#define sclPin D1      //SCL pin for OLED Screen 0.96"
-#define sdaPin D2      //SDA pin for OLED Screen 0.96"
-#define relePin D7     //Rele pin to control the LED White Strip
+#define servoPin D6  // SG-90 Servo yellow cable
+#define sensorPin A0 // IR Photodiode connected between 5V and A0
+#define sclPin D1    //SCL pin for OLED Screen 0.96"
+#define sdaPin D2    //SDA pin for OLED Screen 0.96"
+#define relePin D7   //Rele pin to control the LED White Strip
 
 //Screen
-#define OLED_RESET 0  // GPIO0
+#define OLED_RESET 0 // GPIO0
 
 //Encoder button
 #define encoderSW D5
 #define encoderDT D4
 #define encoderCLK D3
 
+//blynk virtual pins
+#define blynkFeedButton V0
+#define blynkTable V1
+#define blynkLightsButton V2
+#define blynkNextFeedText V3
+#define blynkFirstTimeFood V4
+#define blynkHowManyTimesFeed V5
+#define blynkIntervalFeed V6
+#define blynkPortionFeed V7
+#define blynkLights V8
+#define blynkFoodLevel V9
+#define blynkButtonSetFeedTime V10
+#define blynkRestartESP V11
+
 // Times
-#define debounce 15    // ms debounce period to prevent flickering when pressing or releasing the button
+#define debounce 15      // ms debounce period to prevent flickering when pressing or releasing the button
 #define holdTime 3000    // ms hold period: how long to wait for press+hold event
-#define ledBlinkTime 500    // For signaling out of food
+#define ledBlinkTime 500 // For signaling out of food

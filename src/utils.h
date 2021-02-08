@@ -24,10 +24,6 @@
 #define NTP_localPort 8888 // local port to listen for UDP packets
 #define NTP_PACKET_SIZE 48 // NTP time is in the first 48 bytes of message
 
-void RGB_color(int red_light_value,
-    int green_light_value,
-    int blue_light_value);
-
 time_t getNtpTime();
 void sendNTPpacket(IPAddress& address);
 void Feed(int times);

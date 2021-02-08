@@ -37,19 +37,8 @@ WiFiUDP Udp;
 time_t lastKnownTime = cvt_date(__DATE__, __TIME__); // Compile time
 unsigned long lastKnownTimeAT = 0;
 
-void RGB_color(int red_light_value,
-               int green_light_value,
-               int blue_light_value)
-{
-    //analogWrite(led_RED, red_light_value);
-    //analogWrite(led_GREEN, green_light_value);
-    //analogWrite(led_BLUE, blue_light_value);
-}
-
 void Feed(int times)
 {
-    //RGB_color(128, 64, 0);
-    //show_msg_display_feed("FEEDING");
     drawScreen(0, "Feeding", getTimerHour() + ":" + getTimerMinute(), get_wifi_connected(),
                outOfFood(), get_outOfFoodLED(), false, false, "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, getFeedPortion());
     feeder.attach(servoPin);
@@ -69,16 +58,7 @@ void Feed(int times)
     }
 #endif
 
-    if (outOfFood())
-    {
-        blynkNotify("Low on Food! Feeded at " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
-        blynkAddToTable("Low on Food! Feeded", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
-    }
-    else
-    {
-        blynkNotify("Feeded at " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
-        blynkAddToTable("Feeded", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
-    }
+    setUpdateFeed(true);
 }
 
 boolean outOfFood()

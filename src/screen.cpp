@@ -5,12 +5,15 @@
 #include <images.h>
 #include <time.h>
 #include <timer.h>
+#include <main.h>
 
 Adafruit_SSD1306 OLED(OLED_RESET);
 
 void start_display()
 {
     OLED.begin();
+    OLED.ssd1306_command(SSD1306_COMSCANINC);
+    OLED.ssd1306_command(SSD1306_SEGREMAP);
     OLED.clearDisplay();
 }
 
