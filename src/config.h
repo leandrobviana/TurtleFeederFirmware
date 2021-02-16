@@ -56,8 +56,8 @@
 
 // Misc
 #define regularFeed 1        // Determines how big a portion should be
-#define sensorTrigger 400    // (0-1023) lower is more sensitive
-#define homePosition 8       // (0-180) Default servo position in degrees
+#define sensorTrigger 10    // (0-1023) lower is more sensitive
+#define homePosition 5       // (0-180) Default servo position in degrees
 #define standbyIntensivity 8 // (0-254) Intensivity of standby green led
 
 // Pins

@@ -223,7 +223,6 @@ void blynkTimeString(String value)
 
 void blynkNotify(String text)
 {
-    //Blynk.notify(text);
     Blynk.email("Fish Feed Report", text);
 }
 
@@ -344,6 +343,7 @@ void loop()
         Blynk.virtualWrite(blynkNextFeedText, nextTriggerStr());
         if (outOfFood())
         {
+            Blynk.notify("Low on Food!");
             blynkNotify("Low on Food! Feeded at " + formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
             blynkAddToTable("Low on Food! Feeded", formatTime(day()) + "/" + formatTime(month()) + " " + formatTime(hour()) + ":" + formatTime(minute()));
         }
